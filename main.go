@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -33,6 +34,14 @@ func NewPage(headers, body string) *Page {
 	return &Page{id, headers, body}
 }
 
+func LoadPage(id string) *Page {
+	filename := "pages/" + id + ".json"
+	body, _ := ioutil.ReadFile(filename)
+	page := new(Page)
+	_ = json.Unmarshal(body, page)
+	return page
+}
+
 func (p *Page) save() error {
 	filename := "pages/" + p.ID + ".json"
 	jsn, err := json.Marshal(p)
@@ -44,8 +53,14 @@ func (p *Page) save() error {
 
 func handler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
-		t, _ := template.ParseFiles("index.html")
-		t.Execute(w, nil)
+		id := r.URL.Path[1:]
+		if id == "" {
+			t, _ := template.ParseFiles("index.html")
+			t.Execute(w, nil)
+		} else {
+			p := LoadPage(id)
+			fmt.Println(p)
+		}
 	} else if r.Method == "POST" {
 		err := r.ParseForm()
 		if err != nil {
@@ -58,6 +73,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			logger.Printf("Error: %s", err.Error())
 			http.NotFound(w, r)
 		}
+		http.Redirect(w, r, "/"+p.ID, http.StatusMovedPermanently)
 	} else {
 		http.NotFound(w, r)
 	}
