@@ -2,13 +2,14 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"html/template"
 	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
 	"os"
+	"strings"
+	text "text/template"
 )
 
 var logger = log.New(os.Stdout, "", log.Lshortfile)
@@ -29,8 +30,7 @@ type Page struct {
 	Body    string `json:"body"`
 }
 
-func NewPage(headers, body string) *Page {
-	id := RandStringBytes(5)
+func NewPage(id, headers, body string) *Page {
 	return &Page{id, headers, body}
 }
 
@@ -59,7 +59,15 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			t.Execute(w, nil)
 		} else {
 			p := LoadPage(id)
-			fmt.Println(p)
+			for _, line := range strings.Split(p.Headers, "\n") {
+				if strings.Contains(line, ":") {
+					parts := strings.Split(line, ":")
+					w.Header().Add(parts[0], parts[1])
+				}
+			}
+			t, _ := text.ParseFiles("page.html")
+			t.Execute(w, p)
+
 		}
 	} else if r.Method == "POST" {
 		err := r.ParseForm()
@@ -68,7 +76,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			http.NotFound(w, r)
 		}
 
-		p := NewPage(r.Form["headers"][0], r.Form["body"][0])
+		p := NewPage(r.Form["id"][0], r.Form["headers"][0], r.Form["body"][0])
 		if err := p.save(); err != nil {
 			logger.Printf("Error: %s", err.Error())
 			http.NotFound(w, r)
@@ -81,5 +89,5 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	http.HandleFunc("/", handler)
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":8000", nil)
 }
