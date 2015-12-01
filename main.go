@@ -65,7 +65,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 					w.Header().Add(parts[0], parts[1])
 				}
 			}
-			t, _ := text.ParseFiles("page.html")
+			t, _ := text.New("page").Parse("{{.Body}}")
 			t.Execute(w, p)
 
 		}
