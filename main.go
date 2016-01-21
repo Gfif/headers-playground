@@ -62,7 +62,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			for _, line := range strings.Split(p.Headers, "\n") {
 				if strings.Contains(line, ":") {
 					parts := strings.Split(line, ":")
-					w.Header().Add(parts[0], parts[1])
+					w.Header().Add(parts[0], strings.Join(parts[1:], ":"))
 				}
 			}
 			t, _ := text.New("page").Parse("{{.Body}}")
