@@ -52,6 +52,15 @@ func (p *Page) save() error {
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
+	if username, pass, ok := r.BasicAuth(); !ok {
+		http.Error(w, "Not Authorized", http.StatusUnauthorized)
+		return
+	} else {
+		if username != "admin" && pass != "admin" {
+			http.Error(w, "Not Authorized", http.StatusUnauthorized)
+			return
+		}
+	}
 	if r.Method == "GET" {
 		id := r.URL.Path[1:]
 		if id == "" {
@@ -89,5 +98,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	http.HandleFunc("/", handler)
-	http.ListenAndServe(":8000", nil)
+	logger.Printf("Start server")
+	http.ListenAndServe(":80", nil)
 }
