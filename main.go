@@ -83,7 +83,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		}
 		http.Redirect(w, r, "/"+p.ID, http.StatusMovedPermanently)
 	} else {
-		http.NotFound(w, r)
+		http.Error(w, "Nooooooo!!!", http.StatusMethodNotAllowed)
 	}
 }
 
