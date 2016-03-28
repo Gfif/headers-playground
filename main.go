@@ -52,6 +52,7 @@ func (p *Page) save() error {
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("WWW-Authenticate", "Basic realm=\"admin:admin\"")
 	if username, pass, ok := r.BasicAuth(); !ok {
 		http.Error(w, "Not Authorized", http.StatusUnauthorized)
 		return
