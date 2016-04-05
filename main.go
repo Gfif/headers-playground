@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
+	"flag"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -13,6 +15,11 @@ import (
 )
 
 var logger = log.New(os.Stdout, "", log.Lshortfile)
+var auth = flag.String("auth", "", "<user:password>")
+var port = flag.String("port", "80", "<port>")
+
+var user, pass string
+var isAuth bool
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
@@ -52,16 +59,20 @@ func (p *Page) save() error {
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("WWW-Authenticate", "Basic realm=\"admin:admin\"")
-	if username, pass, ok := r.BasicAuth(); !ok {
-		http.Error(w, "Not Authorized", http.StatusUnauthorized)
-		return
-	} else {
-		if username != "admin" && pass != "admin" {
+
+	if isAuth {
+		w.Header().Set("WWW-Authenticate", "Basic realm=\"\"")
+		if username, password, ok := r.BasicAuth(); !ok {
 			http.Error(w, "Not Authorized", http.StatusUnauthorized)
 			return
+		} else {
+			if username != user || password != pass {
+				http.Error(w, "Not Authorized", http.StatusUnauthorized)
+				return
+			}
 		}
 	}
+
 	if r.Method == "GET" {
 		id := r.URL.Path[1:]
 		if id == "" {
@@ -103,7 +114,22 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	flag.Parse()
+
+	if *auth != "" {
+		isAuth = true
+
+		parts := strings.Split(*auth, ":")
+		if len(parts) != 2 {
+			logger.Fatal(errors.New("Wrong auth var format"))
+		}
+
+		user, pass = parts[0], parts[1]
+	}
+
 	http.HandleFunc("/", handler)
-	logger.Printf("Start server")
-	http.ListenAndServe(":80", nil)
+	logger.Printf("Starting server on port %s", *port)
+	if err := http.ListenAndServe(":"+*port, nil); err != nil {
+		logger.Fatal(err)
+	}
 }
