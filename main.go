@@ -34,12 +34,12 @@ func NewPage(id, headers, body string) *Page {
 	return &Page{id, headers, body}
 }
 
-func LoadPage(id string) *Page {
+func LoadPage(id string) (*Page, error) {
 	filename := "pages/" + id + ".json"
 	body, _ := ioutil.ReadFile(filename)
 	page := new(Page)
-	_ = json.Unmarshal(body, page)
-	return page
+	err := json.Unmarshal(body, page)
+	return page, err
 }
 
 func (p *Page) save() error {
@@ -68,7 +68,12 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			t, _ := template.ParseFiles("index.html")
 			t.Execute(w, nil)
 		} else {
-			p := LoadPage(id)
+			p, err := LoadPage(id)
+			if err != nil {
+				logger.Printf("Error: %s", err.Error())
+				http.NotFound(w, r)
+			}
+
 			for _, line := range strings.Split(p.Headers, "\n") {
 				if strings.Contains(line, ":") {
 					parts := strings.Split(line, ":")
